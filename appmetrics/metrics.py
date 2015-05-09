@@ -22,6 +22,7 @@ import functools
 import threading
 import time
 
+from contextlib import contextmanager
 from .exceptions import DuplicateMetricError, InvalidMetricError
 from . import histogram, simple_metrics, meter, py3comp
 
@@ -228,7 +229,49 @@ def with_meter(name, tick_interval=meter.DEFAULT_TICK_INTERVAL):
 
     return wrapper
 
+@contextmanager
+def this_meter(name,tick_interval=meter.DEFAULT_TICK_INTERVAL):
 
+    try:
+        mmetric = new_meter(name, tick_interval)
+    except DuplicateMetricError as e:
+        mmetric = metric(name)
+
+        if not isinstance(mmetric, meter.Meter):
+            raise DuplicateMetricError("Metric {!r} already exists of type {}".format(name, type(mmetric).__name__))
+
+        if tick_interval != mmetric.tick_interval:
+            raise DuplicateMetricError("Metric {!r} already exists: {}".format(name, mmetric))
+
+    yield
+    mmetric.notify(1)
+
+@contextmanager
+def this_histogram(name, tick_interval=meter.DEFAULT_TICK_INTERVAL):
+
+    reservoir = new_reservoir(reservoir_type, *reservoir_args, **reservoir_kwargs)
+
+    try:
+
+        hmetric = new_histogram(name, reservoir)
+
+    except DuplicateMetricError:
+
+        hmetric = metric(name)
+        if not isinstance(hmetric, histogram.Histogram):
+            raise DuplicateMetricError(
+                "Metric {!r} already exists of type {!r}".format(name, type(hmetric).__name__))
+
+        if not hmetric.reservoir.same_kind(reservoir):
+            raise DuplicateMetricError(
+                "Metric {!r} already exists with a different reservoir: {}".format(name, hmetric.reservoir))
+
+    t1 = time.time()
+    yield
+    t2 = time.time()
+    hmetric.notify(t2-t1)
+
+ 
 def tag(name, tag_name):
     """
     Tag the named metric with the given tag.
