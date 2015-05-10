@@ -1,18 +1,18 @@
-##  Module metrics.py
-##
-##  Copyright (c) 2014 Antonio Valente <y3sman@gmail.com>
-##
-##  Licensed under the Apache License, Version 2.0 (the "License");
-##  you may not use this file except in compliance with the License.
-##  You may obtain a copy of the License at
-##
-##  http://www.apache.org/licenses/LICENSE-2.0
-##
-##  Unless required by applicable law or agreed to in writing, software
-##  distributed under the License is distributed on an "AS IS" BASIS,
-##  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-##  See the License for the specific language governing permissions and
-##  limitations under the License.
+#  Module metrics.py
+#
+#  Copyright (c) 2014 Antonio Valente <y3sman@gmail.com>
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
 
 """
 Main interface module
@@ -35,7 +35,8 @@ LOCK = threading.Lock()
 def new_metric(name, class_, *args, **kwargs):
     """Create a new metric of the given class.
 
-    Raise DuplicateMetricError if the given name has been already registered before
+    Raise DuplicateMetricError if the given name has been already registered
+    before
 
     Internal function - use "new_<type> instead"
     """
@@ -47,7 +48,9 @@ def new_metric(name, class_, *args, **kwargs):
             item = REGISTRY[name] = class_(*args, **kwargs)
             return item
 
-    raise DuplicateMetricError("Metric {} already exists of type {}".format(name, type(item).__name__))
+    raise DuplicateMetricError(
+        "Metric {} already exists of type {}".format(
+            name, type(item).__name__))
 
 
 def delete_metric(name):
@@ -106,11 +109,13 @@ def notify(name, value):
 def new_histogram(name, reservoir=None):
     """
     Build a new histogram metric with a given reservoir object
-    If the reservoir is not provided, a uniform reservoir with the default size is used
+    If the reservoir is not provided, a uniform reservoir with the default
+    size is used
     """
 
     if reservoir is None:
-        reservoir = histogram.UniformReservoir(histogram.DEFAULT_UNIFORM_RESERVOIR_SIZE)
+        reservoir = histogram.UniformReservoir(
+            histogram.DEFAULT_UNIFORM_RESERVOIR_SIZE)
 
     return new_metric(name, histogram.Histogram, reservoir)
 
@@ -139,16 +144,23 @@ def new_meter(name, tick_interval=5):
     return new_metric(name, meter.Meter, tick_interval)
 
 
-def new_histogram_with_implicit_reservoir(name, reservoir_type='uniform', *reservoir_args, **reservoir_kwargs):
+def new_histogram_with_implicit_reservoir(name,
+                                          reservoir_type='uniform',
+                                          *reservoir_args,
+                                          **reservoir_kwargs):
     """
     Build a new histogram metric and a reservoir from the given parameters
     """
 
-    reservoir = new_reservoir(reservoir_type, *reservoir_args, **reservoir_kwargs)
+    reservoir = new_reservoir(reservoir_type,
+                              *reservoir_args,
+                              **reservoir_kwargs)
     return new_histogram(name, reservoir)
 
 
-def new_reservoir(reservoir_type='uniform', *reservoir_args, **reservoir_kwargs):
+def new_reservoir(reservoir_type='uniform',
+                  *reservoir_args,
+                  **reservoir_kwargs):
     """
     Build a new reservoir
     """
@@ -156,19 +168,24 @@ def new_reservoir(reservoir_type='uniform', *reservoir_args, **reservoir_kwargs)
     try:
         reservoir_cls = RESERVOIR_TYPES[reservoir_type]
     except KeyError:
-        raise InvalidMetricError("Unknown reservoir type: {}".format(reservoir_type))
+        raise InvalidMetricError("Unknown reservoir type: {}".format(
+            reservoir_type))
 
     return reservoir_cls(*reservoir_args, **reservoir_kwargs)
 
 
-def with_histogram(name, reservoir_type="uniform", *reservoir_args, **reservoir_kwargs):
+def with_histogram(name,
+                   reservoir_type="uniform",
+                   *reservoir_args,
+                   **reservoir_kwargs):
     """
-    Time-measuring decorator: the time spent in the wrapped function is measured
-    and added to the named metric.
+    Time-measuring decorator: the time spent in the wrapped function is
+    measured and added to the named metric.
     metric_args and metric_kwargs are passed to new_histogram()
     """
 
-    reservoir = new_reservoir(reservoir_type, *reservoir_args, **reservoir_kwargs)
+    reservoir = new_reservoir(
+        reservoir_type, *reservoir_args, **reservoir_kwargs)
 
     try:
         hmetric = new_histogram(name, reservoir)
@@ -176,11 +193,13 @@ def with_histogram(name, reservoir_type="uniform", *reservoir_args, **reservoir_
         hmetric = metric(name)
         if not isinstance(hmetric, histogram.Histogram):
             raise DuplicateMetricError(
-                "Metric {!r} already exists of type {!r}".format(name, type(hmetric).__name__))
+                "Metric {!r} already exists of type {!r}".format(
+                    name, type(hmetric).__name__))
 
         if not hmetric.reservoir.same_kind(reservoir):
             raise DuplicateMetricError(
-                "Metric {!r} already exists with a different reservoir: {}".format(name, hmetric.reservoir))
+                'Metric {!r} already exists with a '
+                'different reservoir: {}'.format(name, hmetric.reservoir))
 
     def wrapper(f):
 
@@ -211,10 +230,13 @@ def with_meter(name, tick_interval=meter.DEFAULT_TICK_INTERVAL):
         mmetric = metric(name)
 
         if not isinstance(mmetric, meter.Meter):
-            raise DuplicateMetricError("Metric {!r} already exists of type {}".format(name, type(mmetric).__name__))
+            raise DuplicateMetricError(
+                'Metric {!r} already exists of type {}'.format(
+                    name, type(mmetric).__name__))
 
         if tick_interval != mmetric.tick_interval:
-            raise DuplicateMetricError("Metric {!r} already exists: {}".format(name, mmetric))
+            raise DuplicateMetricError(
+                'Metric {!r} already exists: {}'.format(name, mmetric))
 
     def wrapper(f):
 
@@ -229,27 +251,32 @@ def with_meter(name, tick_interval=meter.DEFAULT_TICK_INTERVAL):
 
     return wrapper
 
-@contextmanager
-def this_meter(name,tick_interval=meter.DEFAULT_TICK_INTERVAL):
 
+@contextmanager
+def this_meter(name, tick_interval=meter.DEFAULT_TICK_INTERVAL):
     try:
         mmetric = new_meter(name, tick_interval)
     except DuplicateMetricError as e:
         mmetric = metric(name)
 
         if not isinstance(mmetric, meter.Meter):
-            raise DuplicateMetricError("Metric {!r} already exists of type {}".format(name, type(mmetric).__name__))
+            raise DuplicateMetricError(
+                "Metric {!r} already exists of type {}".format(
+                    name, type(mmetric).__name__))
 
         if tick_interval != mmetric.tick_interval:
-            raise DuplicateMetricError("Metric {!r} already exists: {}".format(name, mmetric))
+            raise DuplicateMetricError(
+                "Metric {!r} already exists: {}".format(name, mmetric))
 
     yield
     mmetric.notify(1)
 
+
 @contextmanager
 def this_histogram(name, tick_interval=meter.DEFAULT_TICK_INTERVAL):
 
-    reservoir = new_reservoir(reservoir_type, *reservoir_args, **reservoir_kwargs)
+    reservoir = new_reservoir(
+        reservoir_type, *reservoir_args, **reservoir_kwargs)
 
     try:
 
@@ -260,18 +287,20 @@ def this_histogram(name, tick_interval=meter.DEFAULT_TICK_INTERVAL):
         hmetric = metric(name)
         if not isinstance(hmetric, histogram.Histogram):
             raise DuplicateMetricError(
-                "Metric {!r} already exists of type {!r}".format(name, type(hmetric).__name__))
+                "Metric {!r} already exists of type {!r}".format(
+                    name, type(hmetric).__name__))
 
         if not hmetric.reservoir.same_kind(reservoir):
             raise DuplicateMetricError(
-                "Metric {!r} already exists with a different reservoir: {}".format(name, hmetric.reservoir))
+                'Metric {!r} already exists with a '
+                'different reservoir: {}'.format(name, hmetric.reservoir))
 
     t1 = time.time()
     yield
     t2 = time.time()
     hmetric.notify(t2-t1)
 
- 
+
 def tag(name, tag_name):
     """
     Tag the named metric with the given tag.
@@ -295,8 +324,9 @@ def tags():
 
 def metrics_by_tag(tag_name):
     """
-    Return a dictionary with {metric name: metric values} for all the metrics with the given tag.
-    Return an empty dictionary if the given tag does not exist.
+    Return a dictionary with {metric name: metric values} for all the metrics
+    with the given tag. Return an empty dictionary if the given tag
+    does not exist.
     """
 
     try:
@@ -331,7 +361,8 @@ def untag(name, tag_name):
 
 def metrics_by_name_list(names):
     """
-    Return a dictionary with {metric name: metric value} for all the metrics with the given names.
+    Return a dictionary with {metric name: metric value} for all the metrics
+    with the given names.
     """
     results = {}
 

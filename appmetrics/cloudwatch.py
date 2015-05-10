@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime as dt
-import json
 import functools
+import json
+import logging
 import threading
 import time
-import logging
+
 import boto.ec2.cloudwatch as cw
+
 from appmetrics import py3comp, histogram, meter, simple_metrics
 from appmetrics.exceptions import DuplicateMetricError, InvalidMetricError
+
 
 log = logging.getLogger('appmetrics.cloudwatch')
 
@@ -18,19 +21,41 @@ class CloudWatchReporter(object):
     """
     Histogram Output
 
-{"geometric_mean": 0.03325534873580043, "variance": 0.000710514940172709, "kind": "histogram",
- "skewness": -0.18249688345852352, "harmonic_mean": 0.006975782085630464, "min": 0.0002560615539550781,
- "standard_deviation": 0.02665548611773398, "median": 0.05144786834716797,
- "arithmetic_mean": 0.04756087916237967,
- "percentile": [[50, 0.05036592483520508], [75, 0.07094383239746094], [90, 0.07813692092895508],
-                [95, 0.08578801155090332], [99, 0.09396910667419434], [99.9, 0.09396910667419434]],
- "max": 0.09396910667419434, "n": 42,
- "histogram": [[1.000256061553955, 42]], "kurtosis": -1.0864722693859035}
+{
+    "geometric_mean": 0.03325534873580043,
+    "variance": 0.000710514940172709,
+    "kind": "histogram",
+    "skewness": -0.18249688345852352,
+    "harmonic_mean": 0.006975782085630464,
+    "min": 0.0002560615539550781,
+    "standard_deviation": 0.02665548611773398,
+    "median": 0.05144786834716797,
+    "arithmetic_mean": 0.04756087916237967,
+    "percentile": [
+        [50, 0.05036592483520508],
+        [75, 0.07094383239746094],
+        [90, 0.07813692092895508],
+        [95, 0.08578801155090332],
+        [99, 0.09396910667419434],
+        [99.9, 0.09396910667419434]
+    ],
+    "max": 0.09396910667419434,
+    "n": 42,
+    "histogram": [[1.000256061553955, 42]],
+    "kurtosis": -1.0864722693859035
+}
 
 Meter Output
 
-{"count": 184, "kind": "meter", "five": 18.786777163057295, "one": 18.73603553170346,
- "fifteen": 18.79556787840392, "day": 18.799953705043272, "mean": 18.384584630563918}
+{
+    "count": 184,
+    "kind": "meter",
+    "five": 18.786777163057295,
+    "one": 18.73603553170346,
+    "fifteen": 18.79556787840392,
+    "day": 18.799953705043272,
+    "mean": 18.384584630563918
+}
 
 where
     count: number of operations collected so far
@@ -48,12 +73,20 @@ Gauge Output
 {'kind': 'gauge', 'value': 'version 1.0'}
 
 Meter Output
-{'count': 5, 'kind': 'meter', 'five': 0.0066114184713530035, 'mean': 0.27743058841197027,
- 'fifteen': 0.0022160607980413085, 'day': 2.3147478365093123e-05, 'one': 0.031982234148270686}
+{
+    'count': 5, 'kind': 'meter',
+    'five': 0.0066114184713530035,
+    'mean': 0.27743058841197027,
+    'fifteen': 0.0022160607980413085,
+    'day': 2.3147478365093123e-05,
+    'one': 0.031982234148270686
+}
 
 Valid Unit values
-    Seconds | Microseconds | Milliseconds | Bytes | Kilobytes | Megabytes | Gigabytes |
-    Terabytes | Bits | Kilobits | Megabits | Gigabits | Terabits | Percent | Count |
+    Seconds | Microseconds | Milliseconds |
+    Bytes | Kilobytes | Megabytes | Gigabytes | Terabytes |
+    Bits | Kilobits | Megabits | Gigabits | Terabits |
+    Percent | Count |
     Bytes/Second | Kilobytes/Second | Megabytes/Second | Gigabytes/Second |
     Terabytes/Second | Bits/Second | Kilobits/Second | Megabits/Second |
     Gigabits/Second | Terabits/Second | Count/Second | None
