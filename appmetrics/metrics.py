@@ -273,7 +273,7 @@ def this_meter(name, tick_interval=meter.DEFAULT_TICK_INTERVAL):
 
 
 @contextmanager
-def this_histogram(name, tick_interval=meter.DEFAULT_TICK_INTERVAL):
+def this_histogram(name, reservoir_type="uniform", *reservoir_args, **reservoir_kwargs):
 
     reservoir = new_reservoir(
         reservoir_type, *reservoir_args, **reservoir_kwargs)
