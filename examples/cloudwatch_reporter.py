@@ -67,7 +67,7 @@ def main(region,
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         sys.exit(
-            'Usage: {} <namespace> <region> [ <aws_access_key> '
+            'Usage: {} <region> <namespace> [ <aws_access_key> '
             '<aws_secret_key> ]'.format(sys.argv[0]))
 
     main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])

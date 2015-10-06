@@ -150,21 +150,35 @@ Valid Unit values
         # flatten percentiles
         percentiles = obj.pop('percentile')
         for k, v in percentiles:
-            obj['percentile_{}'.format(k)] = v
+            obj['{}_percentile'.format(k)] = v
 
         # add the current time
         timestamp = dt.now()
         unit = "None"
 
         try:
+            #self._conn.put_metric_data(self._namespace,
+            #                           ['.'.join([parts[-1],
+            #                                      n]) for n in obj.keys()],
+            #                           value=[v for v in obj.values()],
+            #                           timestamp=timestamp,
+            #                           unit=unit,
+            #                           dimensions=dimensions,
+            #                           statistics=None)
             self._conn.put_metric_data(self._namespace,
-                                       ['.'.join([parts[-1],
-                                                  n]) for n in obj.keys()],
-                                       value=[v for v in obj.values()],
+                                       parts[-1],
+                                       value=None,
                                        timestamp=timestamp,
                                        unit=unit,
                                        dimensions=dimensions,
-                                       statistics=None)
+                                       statistics={
+                                           'maximum': obj['max'],
+                                           'minimum': obj['min'],
+                                           'samplecount': obj['n'],
+                                           'average': obj['arithmetic_mean'],
+                                           'sum': obj['n'] * obj['arithmetic_mean']
+                                       })
+
 
         except Exception as e:
             log.error("Put Metrics Exception: {}".format(e))
