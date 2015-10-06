@@ -17,11 +17,12 @@ log = logging.getLogger()
 log.setLevel(logging.DEBUG)
 
 
-@metrics.with_histogram('cloudwatch_reporter:worker_histogram')
 @metrics.with_meter('cloudwatch_reporter:worker_meter')
 def worker():
     # just spend some time
-    time.sleep(random.random() / 10.0)
+    with metrics.this_histogram('cloudwatch_reporter:worker_histogram'):
+        with metrics.timer('cloudwatch_reporter:worker_timer'):
+            time.sleep(random.random() / 10.0)
 
 
 def main(region,
