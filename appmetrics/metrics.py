@@ -268,7 +268,10 @@ def with_meter(name, tick_interval=meter.DEFAULT_TICK_INTERVAL):
 
     return wrapper
 
+
+@contextmanager
 def this_meter(name, tick_interval=meter.DEFAULT_TICK_INTERVAL):
+
     try:
         mmetric = new_meter(name, tick_interval)
     except DuplicateMetricError as e:
