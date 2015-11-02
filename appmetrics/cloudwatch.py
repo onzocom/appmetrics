@@ -179,7 +179,6 @@ Valid Unit values
                                            'sum': obj['n'] * obj['arithmetic_mean']
                                        })
 
-
         except Exception as e:
             log.error("Put Metrics Exception: {}".format(e))
 
@@ -200,11 +199,16 @@ Valid Unit values
         timestamp = dt.now()
         unit = "None"
 
+        # As per http://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutMetricData.html # noqa
+        # PutMetricData only supports values > 8.515920e-109, as the value of
+        # a meter decays over time this needs to be accounted for.
+
         try:
             self._conn.put_metric_data(self._namespace,
                                        ['.'.join([parts[-1],
                                                   n]) for n in obj.keys()],
-                                       value=[v for v in obj.values()],
+                                       value=[v if v > 8.515920e-109 else 0
+                                              for v in obj.values()],
                                        timestamp=timestamp,
                                        unit=unit,
                                        dimensions=dimensions,
